@@ -634,6 +634,76 @@ explique cada caja:
 
 class: smaller
 
+# Evaluación de RAG: Faithfulness y Answer Relevancy
+
+.grid[
+.kol-1-2[
+.bold[Faithfulness — fidelidad al contexto]
+
+¿Las afirmaciones de la respuesta están respaldadas por los chunks recuperados?
+
+$$F = \frac{\text{afirmaciones respaldadas}}{\text{afirmaciones totales}}$$
+
+Un LLM extrae las afirmaciones y verifica cada una contra el contexto.
+]
+.kol-1-2[
+.bold[Answer Relevancy — pertinencia]
+
+¿La respuesta atiende la pregunta del usuario?
+
+En Ragas: un LLM genera preguntas a partir de la respuesta; se promedia su similitud del coseno con la pregunta original usando embeddings.
+]
+]
+
+.bold[Pregunta:] ¿A qué hora cierra la biblioteca?  
+.bold[Contexto:] «Cierra a las 8 p. m. y tiene tres pisos».
+
+| Respuesta | Faithfulness | Relevancy |
+|---|---|---|
+| «Cierra a las 8 p. m.» | Alta | Alta |
+| «Tiene tres pisos» | Alta | Baja |
+| «Cierra a las 10 p. m.» | Baja | Alta |
+
+.footnote[Valoraciones ilustrativas. Fidelidad al contexto no garantiza verdad; pertinencia no evalúa exactitud factual.]
+
+???
+
+Estas métricas evalúan dos relaciones diferentes: respuesta–contexto
+(Faithfulness) y respuesta–pregunta (Answer Relevancy). No requieren una
+respuesta de referencia escrita por un humano.
+
+Para Faithfulness, el evaluador descompone la respuesta en afirmaciones
+verificables y comprueba si cada una se puede inferir del contexto. Si
+hay cuatro afirmaciones y solo tres están respaldadas, F = 3/4 = 0.75.
+No exige repetir las palabras del documento: una paráfrasis respaldada
+cuenta. Si el contexto contiene un error, una respuesta fiel puede
+reproducirlo; por eso esta métrica no equivale a verdad factual.
+
+Para Answer Relevancy, Ragas invierte la dirección: a partir de la
+respuesta genera preguntas que esa respuesta podría contestar
+(habitualmente tres), calcula embeddings y promedia los cosenos entre
+esas preguntas y la pregunta original. Conceptualmente:
+R = (1/N) sum_i cos(E(q), E(q_i)). Las variantes pueden penalizar
+respuestas evasivas. No es una comparación directa entre el embedding
+de la pregunta y el de la respuesta.
+
+Recorrer las tres filas del ejemplo. «Tiene tres pisos» usa información
+correcta del contexto, pero no responde el horario. «Cierra a las 10»
+atiende el tema de la pregunta, pero inventa el dato. Los rótulos alta y
+baja son ilustrativos: los scores reales dependen del evaluador.
+
+Son estimaciones automáticas: conviene revisar ejemplos y mantener fijo
+el evaluador al comparar pipelines. No confundir estas métricas de la
+respuesta con recall o precision del retriever.
+
+Referencias (Ragas, documentación oficial):
+- https://github.com/vibrantlabsai/ragas/blob/main/docs/concepts/metrics/available_metrics/faithfulness.md
+- https://github.com/vibrantlabsai/ragas/blob/main/docs/concepts/metrics/available_metrics/answer_relevance.md
+
+---
+
+class: smaller
+
 # Resumen
 
 - Un .bold[LLM] es un modelo probabilístico autoregresivo: predice el siguiente token y repite. Todo su conocimiento vive en los pesos — no conoce tus documentos, ni eventos posteriores a su fecha de corte, y cuando no sabe puede .italic[alucinar].
